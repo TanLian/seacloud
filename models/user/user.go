@@ -94,7 +94,8 @@ func (u *User) CheckUserPass(pass string) (ok bool, err error) {
 	return u.Password == hash, nil
 }
 
-func InsertUser(username, password, isAdmin=false, profile="", telephone="", avatar="") error{
+func InsertUser(username, password string, isAdmin bool, profile, telephone, avatar string) error {
+//func InsertUser(username, password, isAdmin=false, profile="", telephone="", avatar="") {
 	salt, err := generateSalt()
 	if err != nil {
 		return err
@@ -110,15 +111,15 @@ func InsertUser(username, password, isAdmin=false, profile="", telephone="", ava
 		IsAdmin: isAdmin,
 		Profile: profile,
 		Telephone: telephone,
-		Avatar: avatar
+		Avatar: avatar,
 		Salt:     salt}
 
 	o := orm.NewOrm()
-	_, err := o.Insert(user)
+	_, err = o.Insert(user)
 	return err
 }
 
-func DeleteUserByName(username) error {
+func DeleteUserByName(username string) error {
 	o := orm.NewOrm()
 	
 	_, err := o.Delete(&User{UserName:username})
@@ -126,7 +127,7 @@ func DeleteUserByName(username) error {
 	return err
 }
 
-func GetUserByName(username) (*User, error) {
+func GetUserByName(username string) (*User, error) {
 	o := orm.NewOrm()
 	user := User{UserName: username}
 
@@ -135,5 +136,5 @@ func GetUserByName(username) (*User, error) {
 		return nil, err
 	}
 	
-	return user, nil
+	return &user, nil
 }

@@ -3,7 +3,7 @@ package filters
 import (
 	"seacloud/models/user"
 
-	"github.com/astaxie/beego"
+	//"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
 )
 
@@ -17,7 +17,7 @@ func IsLogin(ctx *context.Context) bool {
 }
 
 var FilterUser = func(ctx *context.Context) {
-	ok, _ := IsLogin(ctx)
+	ok := IsLogin(ctx)
 	if !ok {
 		ctx.Redirect(302, "/user/login/?next=/")
 	}

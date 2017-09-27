@@ -3,13 +3,17 @@ package main
 import (
 	_ "seacloud/routers"
 
+	"fmt"
+
 	"seacloud/filters"
-	"seacloud/models/user"
 
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/context"
+	//"github.com/astaxie/beego/context"
 	//"net/http"
+
 	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beego/orm"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func init() {
