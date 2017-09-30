@@ -1,4 +1,4 @@
-package user
+package models
 
 import (
 	"crypto/rand"
@@ -35,7 +35,8 @@ type User struct {
 
 func init() {
 	// 需要在init中注册定义的model
-	orm.RegisterModelWithPrefix("user_", new(User))
+	//orm.RegisterModelWithPrefix("user_", new(User))
+	orm.RegisterModel(new(User))
 }
 
 func generateSalt() (salt string, err error) {
@@ -95,7 +96,6 @@ func (u *User) CheckUserPass(pass string) (ok bool, err error) {
 }
 
 func InsertUser(username, password string, isAdmin bool, profile, telephone, avatar string) error {
-//func InsertUser(username, password, isAdmin=false, profile="", telephone="", avatar="") {
 	salt, err := generateSalt()
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func InsertUser(username, password string, isAdmin bool, profile, telephone, ava
 		Salt:     salt}
 
 	o := orm.NewOrm()
-	_, err = o.Insert(user)
+	_, err = o.Insert(&user)
 	return err
 }
 
@@ -131,7 +131,7 @@ func GetUserByName(username string) (*User, error) {
 	o := orm.NewOrm()
 	user := User{UserName: username}
 
-	err := o.Read(&user)
+	err := o.Read(&user, "UserName")
 	if err != nil {
 		return nil, err
 	}

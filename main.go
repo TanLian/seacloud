@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"seacloud/filters"
+	_ "seacloud/models"
 
 	"github.com/astaxie/beego"
 	//"github.com/astaxie/beego/context"
@@ -24,7 +25,7 @@ func init() {
 	logs.EnableFuncCallDepth(true) //输出文件名和行号
 
 	//检测用户是否登录，应用于全部的请求，如果未登陆，则重定向到登录页面
-	beego.InsertFilter("/*", beego.BeforeRouter, filters.FilterUser)
+	beego.InsertFilter("/api/*", beego.BeforeRouter, filters.FilterUser)
 
 	//数据库相关
 	dbName := beego.AppConfig.String("dbname")
@@ -37,7 +38,7 @@ func init() {
 	}
 	orm.RegisterDriver("mysql", orm.DRMySQL)
 	orm.RegisterDataBase("default", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", dbUser, dbPass, dbHost, dbPort, dbName))
-
+	orm.RunSyncdb("default", false, true)
 }
 
 func main() {

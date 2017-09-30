@@ -1,7 +1,8 @@
 package filters
 
 import (
-	"seacloud/models/user"
+	"seacloud/models"
+	"fmt"
 
 	//"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
@@ -9,10 +10,13 @@ import (
 
 func IsLogin(ctx *context.Context) bool {
 	cookie, err := ctx.Request.Cookie("Authorization")
-	if err != nil || !user.CheckToken(cookie.Value) {
+	if err != nil || !models.CheckToken(cookie.Value) {
 		//http.Redirect(ctx.ResponseWriter, ctx.Request, "/user/login/?next=/", http.StatusMovedPermanently)
+		fmt.Println("校验失败")
 		return false
 	}
+	fmt.Println("校验通过")
+	fmt.Println(cookie)
 	return true
 }
 
