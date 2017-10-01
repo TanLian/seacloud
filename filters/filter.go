@@ -23,6 +23,6 @@ func IsLogin(ctx *context.Context) bool {
 var FilterUser = func(ctx *context.Context) {
 	ok := IsLogin(ctx)
 	if !ok {
-		ctx.Redirect(302, "/user/login/?next=/")
+		ctx.Redirect(302, "/#/accounts/login/")
 	}
 }

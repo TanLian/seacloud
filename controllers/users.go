@@ -47,9 +47,12 @@ func (this *UserController)Post() {
 	//用户名和密码均正确
 	fmt.Println("Username and password are both correct.")
 
+	//设置session
+	this.SetSession("username", form.UserName)
+
 	//生成token
 	token := models.GenToken()
 	cookie := http.Cookie{Name: "Authorization", Value: token, Path: "/", MaxAge: 3600}
 	http.SetCookie(this.Ctx.ResponseWriter, &cookie)
-	this.Redirect("/#/say_hi/", 302)
+	this.Redirect("/#/apps/files", 302)
 }
