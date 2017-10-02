@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"github.com/widuu/goini"
 	"io/ioutil"
+	"time"
+	"strconv"
 )
 
 type File struct {
@@ -13,6 +15,34 @@ type File struct {
 	Type string
 	Mtime int64
 	MtimeRelative string
+}
+
+const (
+	ONEMINUTE int64 = 60
+	ONEHOUR = 3600
+	ONEDAY = 24 * ONEHOUR
+	TWOWEEKS = 14 * ONEDAY
+)
+
+func Translate_seacloud_time(mtime int64) string{
+	now := time.Now().Unix()
+	fmt.Println(mtime)
+	fmt.Println(now)
+	if mtime > now {
+		return "1秒前"
+	}
+	switch  {
+	case now - mtime > TWOWEEKS:
+		return time.Unix(mtime, 0).Format("2006-01-02 15:04:05")
+	case now - mtime > ONEDAY:
+		return strconv.FormatInt((now-mtime)/ONEDAY, 10) + "天前"
+	case now - mtime > ONEHOUR:
+		return strconv.FormatInt((now-mtime)/ONEHOUR, 10) + "小时前"
+	case now - mtime > ONEMINUTE:
+		return strconv.FormatInt((now-mtime)/ONEMINUTE, 10) + "分钟前"
+	default:
+		return strconv.FormatInt(now-mtime, 10) + "秒前"
+	}
 }
 
 func GetConfPath() string {
@@ -42,12 +72,13 @@ func GetFilelistByPath(username, p string) ([]File, error) {
 		if fi.IsDir() {
 			tp = "dir"
 		}
+		mtime := fi.ModTime().Unix()
 		obj := File{
 			Name: fi.Name(),
 			Size: fi.Size(),
 			Type: tp,
-			Mtime: fi.ModTime().Unix(),
-			MtimeRelative: fi.ModTime().Format("2006-01-02 15:04:05")}
+			Mtime: mtime,
+			MtimeRelative: Translate_seacloud_time(mtime)}
 		ret = append(ret, obj)
 	}
 
