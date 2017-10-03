@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"time"
 	"strconv"
+	"crypto/md5"
+	"io"
 )
 
 type File struct {
@@ -16,13 +18,6 @@ type File struct {
 	Mtime int64
 	MtimeRelative string
 }
-
-const (
-	ONEMINUTE int64 = 60
-	ONEHOUR = 3600
-	ONEDAY = 24 * ONEHOUR
-	TWOWEEKS = 14 * ONEDAY
-)
 
 func Translate_seacloud_time(mtime int64) string{
 	now := time.Now().Unix()
@@ -49,6 +44,13 @@ func GetConfPath() string {
 	return "/Users/tanlian/Documents/goprj/src/seacloud/conf/seacloud.ini"
 }
 
+func GetDataBaseDir() string {
+	confPath := GetConfPath()
+	conf := goini.SetConfig(confPath)
+	dataDir := conf.GetValue("GENERA", "data_dir")
+	return dataDir
+}
+
 /*
 给定用户名和path，返回文件列表
 */
@@ -56,9 +58,7 @@ func GetFilelistByPath(username, p string) ([]File, error) {
 	ret := make([]File, 0)
 
 	//获取data_dir根目录
-	confPath := GetConfPath()
-	conf := goini.SetConfig(confPath)
-	dataDir := conf.GetValue("GENERA", "data_dir")
+	dataDir := GetDataBaseDir()
 
 	//遍历指定目录，返回文件列表
 	dir, err := ioutil.ReadDir(filepath.Join(dataDir, username, p))
@@ -73,14 +73,31 @@ func GetFilelistByPath(username, p string) ([]File, error) {
 			tp = "dir"
 		}
 		mtime := fi.ModTime().Unix()
+		seacloud_time := Translate_seacloud_time(mtime)
+		fmt.Println(mtime)
+		fmt.Println(seacloud_time)
 		obj := File{
 			Name: fi.Name(),
 			Size: fi.Size(),
 			Type: tp,
 			Mtime: mtime,
-			MtimeRelative: Translate_seacloud_time(mtime)}
+			MtimeRelative: seacloud_time}
 		ret = append(ret, obj)
 	}
 
 	return ret, nil
+}
+
+//生成上传链接、下载链接token
+func GenerateToken(username, path string) string {
+	now := strconv.FormatInt(time.Now().Unix(), 10)
+	str := now + username + path
+	h := md5.New()
+	io.WriteString(h, str)
+	token := fmt.Sprintf("%x", h.Sum(nil))
+	return token
+}
+
+func GetTmpDownloadLink(token string) string {
+	return "/api/file/download?token=" + token
 }
