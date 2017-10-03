@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"crypto/md5"
 	"io"
+	"os"
 )
 
 type File struct {
@@ -100,4 +101,20 @@ func GenerateToken(username, path string) string {
 
 func GetTmpDownloadLink(token string) string {
 	return "/api/file/download?token=" + token
+}
+
+func GetTmpUploadLink(token string) string {
+	return "/api/file/upload?token=" + token
+}
+
+//判断文件/文件夹是否存在
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }

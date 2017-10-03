@@ -1,7 +1,7 @@
 package models
 
 import (
-	//"fmt"
+	"fmt"
 	"time"
 	"github.com/astaxie/beego/orm"
 	"seacloud/utils"
@@ -26,7 +26,7 @@ func init() {
 /*
 注：usedlimits为0时表示token可以使用任意多次
 */
-func GenerateTmpDownloaToken(username, p string, usedlimits int) string {
+func GenerateTmpDownloadToken(username, p string, usedlimits int) (string, error) {
 	token := utils.GenerateToken(username, p)
 	link := TmpDownloadLink{
 		Token: token,
@@ -35,8 +35,12 @@ func GenerateTmpDownloaToken(username, p string, usedlimits int) string {
 		UsedTimes: 0,
 		UsedLimits: usedlimits}
 	o := orm.NewOrm()
-	o.Insert(&link)
-	return token
+	_, err := o.Insert(&link)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	return token, nil
 }
 
 func GetTmpDownloadObjByToken(token string) (*TmpDownloadLink, error) {
