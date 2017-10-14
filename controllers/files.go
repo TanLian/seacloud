@@ -9,6 +9,7 @@ import (
 	"seacloud/utils"
 	"path/filepath"
 	"seacloud/models"
+	"encoding/json"
 )
 
 type FileController struct {
@@ -16,7 +17,8 @@ type FileController struct {
 }
 
 func (this *FileController)Get() {
-	ret := make(map[string][]utils.File)
+	//ret := make(map[string][]utils.File)
+	ret := make(map[string]interface{})
 	username := this.GetSession("username")
 	dirPath := this.GetString("path")
 	fmt.Println("username:", username)
@@ -38,6 +40,7 @@ func (this *FileController)Get() {
 		return
 	}
 	ret["files"] = files
+	ret["success"] = true
 
 	this.Data["json"] = &ret
 	this.ServeJSON()
@@ -195,6 +198,57 @@ func (this *FileController)DeleteFile() {
 	}
 
 	ret["success"] = "success"
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}
+
+type RenameFileInfo struct {
+	ParentDir string `json:"parent_dir"`
+	OldFileName string `json:"old_name"`
+	NewFileName string `json:"new_name"`
+}
+func (this *FileController)RenameFile(){
+	errRet := make(map[string]string)
+	var params RenameFileInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	username := this.GetSession("username")
+
+	dataDir := utils.GetDataBaseDir()
+	fullPath := filepath.Join(dataDir, username.(string), params.ParentDir, params.OldFileName)
+
+	isExist, err := utils.PathExists(fullPath)
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	if isExist == false {
+		errRet["error"] = "File does not exist."
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	//do rename file
+	err = os.Rename(fullPath, filepath.Join(dataDir, username.(string), params.ParentDir, params.NewFileName))
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	ret := make(map[string]bool)
+	ret["success"] = true
 	this.Data["json"] = &ret
 	this.ServeJSON()
 }

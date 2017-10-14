@@ -15,5 +15,6 @@ func init() {
 	beego.Router("/api/file/download", &controllers.FileController{}, "get:DownloadFile")
 	beego.Router("/api/file/upload", &controllers.FileController{}, "post:UploadFile")
 	beego.Router("/api/file/delete", &controllers.FileController{}, "get:DeleteFile")
+	beego.Router("/api/file/rename", &controllers.FileController{}, "post:RenameFile")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }
