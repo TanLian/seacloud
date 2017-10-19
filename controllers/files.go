@@ -189,7 +189,7 @@ func (this *FileController)DeleteFile() {
 		return
 	}
 
-	err = os.Remove(fullPath)
+	err = os.RemoveAll(fullPath)
 	if err != nil {
 		ret["error"] = err.Error()
 		this.Data["json"] = &ret
