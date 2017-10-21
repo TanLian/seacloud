@@ -252,3 +252,97 @@ func (this *FileController)RenameFile(){
 	this.Data["json"] = &ret
 	this.ServeJSON()
 }
+
+type FileInfo struct {
+	ParentDir string `json:"parent_dir"`
+	FileName string `json:"name"`
+}
+func (this *FileController)NewDir() {
+	errRet := make(map[string]string)
+	var params FileInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	username := this.GetSession("username")
+
+	dataDir := utils.GetDataBaseDir()
+	fullPath := filepath.Join(dataDir, username.(string), params.ParentDir, params.FileName)
+
+	isExist, err := utils.PathExists(fullPath)
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	if isExist == true {
+		errRet["error"] = "Dir already exist."
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	err = os.Mkdir(fullPath, 0777)
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	ret := make(map[string]bool)
+	ret["success"] = true
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}
+
+func (this *FileController)NewFile() {
+	errRet := make(map[string]string)
+	var params FileInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	username := this.GetSession("username")
+
+	dataDir := utils.GetDataBaseDir()
+	fullPath := filepath.Join(dataDir, username.(string), params.ParentDir, params.FileName)
+
+	isExist, err := utils.PathExists(fullPath)
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	if isExist == true {
+		errRet["error"] = "File already exist."
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	_, err = os.Create(fullPath)
+	if err != nil {
+		errRet["error"] = err.Error()
+		this.Data["json"] = &errRet
+		this.ServeJSON()
+		return
+	}
+
+	ret := make(map[string]bool)
+	ret["success"] = true
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}
