@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"seacloud/models"
 	"encoding/json"
+	"bufio"
+	"strconv"
 )
 
 type FileController struct {
@@ -93,7 +95,7 @@ func (this *FileController)UploadFile() {
 	dataDir := utils.GetDataBaseDir()
 	fmt.Println("baseDir:", dataDir)
 
-	this.SaveToFile("file", filepath.Join(dataDir, "root", p, h.Filename))
+	this.SaveToFile("file", filepath.Join(dataDir, "root", "files", p, h.Filename))
 	
 	ret2 := make(map[string][]utils.File)
 	files := make([]utils.File, 0)
@@ -125,12 +127,12 @@ func (this *FileController)DownloadFile() {
 	}
 
 	//检测token值是否超出使用限制
-	if obj.UsedTimes >= obj.UsedLimits {
+	/*if obj.UsedTimes >= obj.UsedLimits {
 		ret["error"] = "token exceed used limits."
 		this.Data["json"] = &ret
 		this.ServeJSON()
 		return
-	}
+	}*/
 
 	//检测token是否过期
 	if obj.TokenIsExpired() {
@@ -148,7 +150,7 @@ func (this *FileController)DownloadFile() {
 	username := this.GetSession("username")
 	p := obj.Path
 	dataDir := utils.GetDataBaseDir()
-	fullPath := filepath.Join(dataDir, username.(string), p)
+	fullPath := filepath.Join(dataDir, username.(string), "files", p)
 	file, err := os.Open(fullPath)
 	if err != nil {
 		ret["error"] = err.Error()
@@ -161,9 +163,9 @@ func (this *FileController)DownloadFile() {
 	filename := filepath.Base(p)
 	fmt.Println(filename)
 	fmt.Println("+++++")
-	/*this.Ctx.Output.Header("Content-Type", "application/octet-stream")
+	this.Ctx.Output.Header("Content-Type", "application/octet-stream")
 	this.Ctx.Output.Header("content-disposition", "attachment; filename=\""+filename+"\"")
-	io.Copy(this.Ctx.ResponseWriter, file)*/
+	//io.Copy(this.Ctx.ResponseWriter, file)
 	this.Ctx.Output.Download(fullPath, filename)
 }
 
@@ -172,8 +174,9 @@ func (this *FileController)DeleteFile() {
 	username := this.GetSession("username")
 	p := this.GetString("p")
 	dataDir := utils.GetDataBaseDir()
-	fullPath := filepath.Join(dataDir, username.(string), p)
+	fullPath := filepath.Join(dataDir, username.(string), "files", p)
 
+	//判断文件是否存在
 	isExist, err := utils.PathExists(fullPath)
 	if err != nil {
 		ret["error"] = err.Error()
@@ -189,8 +192,42 @@ func (this *FileController)DeleteFile() {
 		return
 	}
 
-	err = os.RemoveAll(fullPath)
+	//生成唯一id
+	id := utils.UniqueId()
+
+	//获取文件/文件夹信息
+	fileinfo, err := os.Stat(fullPath)
 	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	//生成info文件
+	infoF, err := os.OpenFile(filepath.Join(dataDir, username.(string), "Trash", "info", fileinfo.Name()+"."+id+".info"), os.O_RDWR|os.O_APPEND|os.O_CREATE, os.ModeType) 
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+	defer infoF.Close()
+	w := bufio.NewWriter(infoF)
+	w.WriteString("path=" + p + "\n")
+	w.WriteString("delete_time=" + strconv.FormatInt(time.Now().Unix(), 10) + "\n")
+	if fileinfo.IsDir() {
+		w.WriteString("type=d" + "\n")
+	}else{
+		w.WriteString("type=f" + "\n")
+	}
+	w.WriteString("size="+strconv.FormatInt(fileinfo.Size(), 10) + "\n")
+	w.Flush()
+
+	//移动文件/文件夹到指定位置（并重命名）
+	err = os.Rename(fullPath, filepath.Join(dataDir, username.(string), "Trash", "files", fileinfo.Name()+"."+id))
+	if err != nil {
+		os.Remove(filepath.Join(dataDir, username.(string), "Trash", "info", fileinfo.Name()+"."+id+".info"))
 		ret["error"] = err.Error()
 		this.Data["json"] = &ret
 		this.ServeJSON()
@@ -221,7 +258,7 @@ func (this *FileController)RenameFile(){
 	username := this.GetSession("username")
 
 	dataDir := utils.GetDataBaseDir()
-	fullPath := filepath.Join(dataDir, username.(string), params.ParentDir, params.OldFileName)
+	fullPath := filepath.Join(dataDir, username.(string), "files", params.ParentDir, params.OldFileName)
 
 	isExist, err := utils.PathExists(fullPath)
 	if err != nil {
@@ -239,7 +276,7 @@ func (this *FileController)RenameFile(){
 	}
 
 	//do rename file
-	err = os.Rename(fullPath, filepath.Join(dataDir, username.(string), params.ParentDir, params.NewFileName))
+	err = os.Rename(fullPath, filepath.Join(dataDir, username.(string), "files", params.ParentDir, params.NewFileName))
 	if err != nil {
 		errRet["error"] = err.Error()
 		this.Data["json"] = &errRet
@@ -271,7 +308,7 @@ func (this *FileController)NewDir() {
 	username := this.GetSession("username")
 
 	dataDir := utils.GetDataBaseDir()
-	fullPath := filepath.Join(dataDir, username.(string), params.ParentDir, params.FileName)
+	fullPath := filepath.Join(dataDir, username.(string), "files", params.ParentDir, params.FileName)
 
 	isExist, err := utils.PathExists(fullPath)
 	if err != nil {
@@ -316,7 +353,7 @@ func (this *FileController)NewFile() {
 	username := this.GetSession("username")
 
 	dataDir := utils.GetDataBaseDir()
-	fullPath := filepath.Join(dataDir, username.(string), params.ParentDir, params.FileName)
+	fullPath := filepath.Join(dataDir, username.(string), "files", params.ParentDir, params.FileName)
 
 	isExist, err := utils.PathExists(fullPath)
 	if err != nil {
