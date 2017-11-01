@@ -383,3 +383,38 @@ func (this *FileController)NewFile() {
 	this.Data["json"] = &ret
 	this.ServeJSON()
 }
+
+func (this *FileController)GetTrashFiles() {
+	p := this.GetString("path")
+	username := this.GetSession("username")
+	ret := make(map[string]interface{})
+
+	dataDir := utils.GetDataBaseDir()
+	fullPath := filepath.Join(dataDir, username.(string), "Trash", "files", p)
+	isExist, err := utils.PathExists(fullPath)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+	if isExist == false {
+		ret["error"] = "Dir does not exist."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	//遍历目录
+	files, err := utils.GetTrashFilelistByPath(username.(string), p)
+	if err != nil {
+		fmt.Println(err)
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+	ret["files"] = files
+	ret["success"] = true
+	this.Data["json"] = &ret
+	this.ServeJSON()	
+}

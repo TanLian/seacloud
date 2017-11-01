@@ -10,6 +10,10 @@ import (
 	"crypto/md5"
 	"io"
 	"os"
+	"crypto/rand"  
+	"encoding/base64"  
+	"encoding/hex"  
+	"strings"
 )
 
 type File struct {
@@ -18,6 +22,11 @@ type File struct {
 	Type string
 	Mtime int64
 	MtimeRelative string
+}
+
+type TrashFile struct {
+	File File
+	Id string
 }
 
 func Translate_seacloud_time(mtime int64) string{
@@ -62,7 +71,7 @@ func GetFilelistByPath(username, p string) ([]File, error) {
 	dataDir := GetDataBaseDir()
 
 	//遍历指定目录，返回文件列表
-	dir, err := ioutil.ReadDir(filepath.Join(dataDir, username, p))
+	dir, err := ioutil.ReadDir(filepath.Join(dataDir, username, "files", p))
 	if err != nil {
 		fmt.Println(err)
 		return ret, err
@@ -83,6 +92,50 @@ func GetFilelistByPath(username, p string) ([]File, error) {
 			Type: tp,
 			Mtime: mtime,
 			MtimeRelative: seacloud_time}
+		ret = append(ret, obj)
+	}
+
+	return ret, nil
+}
+
+/*
+给定用户名和path，返回回收站内文件列表
+*/
+func GetTrashFilelistByPath(username, p string) ([]TrashFile, error) {
+	ret := make([]TrashFile, 0)
+
+	//获取data_dir根目录
+	dataDir := GetDataBaseDir()
+
+	//遍历指定目录，返回文件列表
+	dir, err := ioutil.ReadDir(filepath.Join(dataDir, username, "Trash", "files", p))
+	if err != nil {
+		fmt.Println(err)
+		return ret, err
+	}
+
+	for _, fi := range dir {
+		tp := "file"
+		if fi.IsDir() {
+			tp = "dir"
+		}
+		mtime := fi.ModTime().Unix()
+		seacloud_time := Translate_seacloud_time(mtime)
+		name := fi.Name()
+		fileId := ""
+		dotIndex := strings.LastIndex(name, ".")
+		if p == "/" {
+			fileId = name[dotIndex + 1:]
+			name = name[:strings.LastIndex(name, ".")]
+		}	
+		obj := TrashFile{}
+		obj.File = File{
+			Name: name,
+			Size: fi.Size(),
+			Type: tp,
+			Mtime: mtime,
+			MtimeRelative: seacloud_time}
+		obj.Id = fileId
 		ret = append(ret, obj)
 	}
 
@@ -118,3 +171,20 @@ func PathExists(path string) (bool, error) {
 	}
 	return false, err
 }
+
+//生成32位md5字串  
+func GetMd5String(s string) string {  
+	h := md5.New()  
+	h.Write([]byte(s))  
+	return hex.EncodeToString(h.Sum(nil))  
+}  
+
+//生成Guid字串  
+func UniqueId() string {  
+	b := make([]byte, 48)  
+
+	if _, err := io.ReadFull(rand.Reader, b); err != nil {  
+			return ""  
+	}  
+	return GetMd5String(base64.URLEncoding.EncodeToString(b))  
+} 
