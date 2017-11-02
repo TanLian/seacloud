@@ -418,3 +418,20 @@ func (this *FileController)GetTrashFiles() {
 	this.Data["json"] = &ret
 	this.ServeJSON()	
 }
+
+func (this *FileController)ClearTrashFiles() {
+	username := this.GetSession("username")
+	ret := make(map[string]interface{})
+
+	dataDir := utils.GetDataBaseDir()
+
+	os.RemoveAll(filepath.Join(dataDir, username.(string), "Trash", "files"))
+	os.RemoveAll(filepath.Join(dataDir, username.(string), "Trash", "info"))
+
+	os.Mkdir(filepath.Join(dataDir, username.(string), "Trash", "files"), 0777)
+	os.Mkdir(filepath.Join(dataDir, username.(string), "Trash", "info"), 0777)
+
+	ret["success"] = true
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}
