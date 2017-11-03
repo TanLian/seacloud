@@ -12,6 +12,8 @@ import (
 	"encoding/json"
 	"bufio"
 	"strconv"
+	"strings"
+	"github.com/widuu/goini"
 )
 
 type FileController struct {
@@ -205,7 +207,7 @@ func (this *FileController)DeleteFile() {
 	}
 
 	//生成info文件
-	infoF, err := os.OpenFile(filepath.Join(dataDir, username.(string), "Trash", "info", fileinfo.Name()+"."+id+".info"), os.O_RDWR|os.O_APPEND|os.O_CREATE, os.ModeType) 
+	infoF, err := os.OpenFile(filepath.Join(dataDir, username.(string), "Trash", "info", fileinfo.Name()+"."+id+".info"), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644) 
 	if err != nil {
 		ret["error"] = err.Error()
 		this.Data["json"] = &ret
@@ -214,6 +216,7 @@ func (this *FileController)DeleteFile() {
 	}
 	defer infoF.Close()
 	w := bufio.NewWriter(infoF)
+	w.WriteString("[GENERA]\n")
 	w.WriteString("path=" + p + "\n")
 	w.WriteString("delete_time=" + strconv.FormatInt(time.Now().Unix(), 10) + "\n")
 	if fileinfo.IsDir() {
@@ -431,6 +434,76 @@ func (this *FileController)ClearTrashFiles() {
 	os.Mkdir(filepath.Join(dataDir, username.(string), "Trash", "files"), 0777)
 	os.Mkdir(filepath.Join(dataDir, username.(string), "Trash", "info"), 0777)
 
+	ret["success"] = true
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}
+
+type RestoreFileInfo struct {
+	ParentDir string `json:"parent_dir"`
+	FileName string `json:"name"`
+	Id string `json:"id"`
+}
+func (this *FileController)RestoreTrashSingleFile() {
+	username := this.GetSession("username")
+	ret := make(map[string]interface{})
+
+	var params RestoreFileInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	dataDir := utils.GetDataBaseDir()
+
+	//get info file
+	infoFile := ""
+
+	if params.Id == "" {
+		parent_dir_base := params.ParentDir[1:]
+		parent_dir_base = parent_dir_base[:strings.Index(parent_dir_base, "/")]
+		infoFile = filepath.Join(dataDir, username.(string), "Trash", "info", parent_dir_base + ".info")
+	}else {
+		infoFile = filepath.Join(dataDir, username.(string), "Trash", "info", params.FileName + "." + params.Id + ".info")
+	}
+
+	//获取删除之前所在的目录
+	conf := goini.SetConfig(infoFile)
+	p := conf.GetValue("GENERA", "path")
+
+	src, dst := "", ""
+	if params.Id == "" {
+		src = filepath.Join(dataDir, username.(string), "Trash", "files", params.ParentDir, params.FileName)
+		dst = filepath.Join(filepath.Join(dataDir, username.(string), "files", p, params.FileName))
+	}else {
+		src = filepath.Join(dataDir, username.(string), "Trash", "files", params.ParentDir, params.FileName + "." + params.Id)
+		dst = filepath.Join(filepath.Join(dataDir, username.(string), "files", p))
+	}
+
+	dir := filepath.Dir(dst)
+	os.MkdirAll(dir, 0777)
+
+	exist, _ := utils.PathExists(dst)
+	if exist {
+		dst += "(1)"
+	}
+	
+	err = os.Rename(src, dst)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	//删掉info文件
+	if params.Id != "" {
+		os.Remove(infoFile)
+	}
+	
 	ret["success"] = true
 	this.Data["json"] = &ret
 	this.ServeJSON()

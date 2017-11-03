@@ -20,5 +20,6 @@ func init() {
 	beego.Router("/api/dir/new", &controllers.FileController{}, "post:NewDir")
 	beego.Router("/api/files/trash", &controllers.FileController{}, "get:GetTrashFiles")
 	beego.Router("/api/files/trash/clear", &controllers.FileController{}, "delete:ClearTrashFiles")
+	beego.Router("/api/files/trash/restore", &controllers.FileController{}, "post:RestoreTrashSingleFile")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }
