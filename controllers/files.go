@@ -25,8 +25,6 @@ func (this *FileController)Get() {
 	ret := make(map[string]interface{})
 	username := this.GetSession("username")
 	dirPath := this.GetString("path")
-	fmt.Println("username:", username)
-	fmt.Println("path:", dirPath)
 
 	files := make([]utils.File, 0)
 	ret["files"] = files
@@ -88,14 +86,11 @@ func (this *FileController)UploadFile() {
 	p := obj.Path
 	
 	f, h, _ := this.GetFile("file")                  //获取上传的文件
-	fmt.Println(h.Filename)
 	defer f.Close()
 
-	username := this.GetSession("username")
-	fmt.Println(username)
+	//username := this.GetSession("username")
 
 	dataDir := utils.GetDataBaseDir()
-	fmt.Println("baseDir:", dataDir)
 
 	this.SaveToFile("file", filepath.Join(dataDir, "root", "files", p, h.Filename))
 	
@@ -107,7 +102,8 @@ func (this *FileController)UploadFile() {
 		Size: h.Size,
 		Type: "file",
 		Mtime: mtime,
-		MtimeRelative: utils.Translate_seacloud_time(mtime)}
+		MtimeRelative: utils.Translate_seacloud_time(mtime),
+		Starred: false}
 	files = append(files, obj2)
 	ret2["files"] = files
 	this.Data["json"] = &ret2
@@ -163,8 +159,6 @@ func (this *FileController)DownloadFile() {
 	defer file.Close()
 
 	filename := filepath.Base(p)
-	fmt.Println(filename)
-	fmt.Println("+++++")
 	this.Ctx.Output.Header("Content-Type", "application/octet-stream")
 	this.Ctx.Output.Header("content-disposition", "attachment; filename=\""+filename+"\"")
 	//io.Copy(this.Ctx.ResponseWriter, file)
@@ -507,4 +501,117 @@ func (this *FileController)RestoreTrashSingleFile() {
 	ret["success"] = true
 	this.Data["json"] = &ret
 	this.ServeJSON()
+}
+
+func (this *FileController)GetFavorateFiles() {
+	username := this.GetSession("username")
+	ret := make(map[string]interface{})
+
+	dataDir := utils.GetDataBaseDir()
+
+	files, err := models.GetAllFavoritesByUsername(username.(string))
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	items := make([]utils.FavorateFile, 0)
+	var fileInfo os.FileInfo
+	var tp string
+	for _, fl := range files {
+		fileInfo, _ = os.Stat(filepath.Join(dataDir, username.(string), "files", fl.Path))
+		if fileInfo.IsDir() {
+			tp = "dir"
+		}else {
+			tp = "file"
+		}
+		var item utils.FavorateFile
+		item.File = utils.File {
+			Name: fileInfo.Name(),
+			Size: fileInfo.Size(),
+			Type: tp,
+			Mtime: fileInfo.ModTime().Unix(),
+			MtimeRelative: utils.Translate_seacloud_time(fileInfo.ModTime().Unix()),
+			Starred: true}
+		item.Path = fl.Path
+		items = append(items, item)
+	}
+
+	ret["files"] = items
+	ret["success"] = true
+	this.Data["json"] = &ret
+	this.ServeJSON()	
+}
+
+type AddFavorateFileInfo struct {
+	ParentDir string `json:"parent_dir"`
+	FileName string `json:"name"`
+}
+func (this *FileController)AddFavorateFile() {
+	username := this.GetSession("username")
+	ret := make(map[string]interface{})
+
+	var params AddFavorateFileInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	dataDir := utils.GetDataBaseDir()
+
+	//取文件/文件夹信息
+	fullPath := filepath.Join(dataDir, username.(string), "files", params.ParentDir, params.FileName)
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	err = models.AddFavoritesItem(username.(string), filepath.Join(params.ParentDir, params.FileName), info.IsDir())
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	ret["success"] = true
+	this.Data["json"] = &ret
+	this.ServeJSON()	
+}
+
+type DeleteFavorateFileInfo struct {
+	FilePath string `json:"path"`
+}
+func (this *FileController)DeleteFavorateFile() {
+	username := this.GetSession("username")
+	ret := make(map[string]interface{})
+
+	var params DeleteFavorateFileInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	err = models.DeleteFavoritesItem(username.(string), params.FilePath)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	ret["success"] = true
+	this.Data["json"] = &ret
+	this.ServeJSON()	
 }

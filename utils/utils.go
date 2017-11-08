@@ -14,6 +14,7 @@ import (
 	"encoding/base64"  
 	"encoding/hex"  
 	"strings"
+	"github.com/astaxie/beego/orm"
 )
 
 type File struct {
@@ -22,6 +23,7 @@ type File struct {
 	Type string
 	Mtime int64
 	MtimeRelative string
+	Starred bool
 }
 
 type TrashFile struct {
@@ -29,10 +31,13 @@ type TrashFile struct {
 	Id string
 }
 
+type FavorateFile struct {
+	File File
+	Path string
+}
+
 func Translate_seacloud_time(mtime int64) string{
 	now := time.Now().Unix()
-	fmt.Println(mtime)
-	fmt.Println(now)
 	if mtime > now {
 		return "1秒前"
 	}
@@ -84,14 +89,17 @@ func GetFilelistByPath(username, p string) ([]File, error) {
 		}
 		mtime := fi.ModTime().Unix()
 		seacloud_time := Translate_seacloud_time(mtime)
-		fmt.Println(mtime)
-		fmt.Println(seacloud_time)
+		starred := false
+		if orm.NewOrm().QueryTable("favorites").Filter("user_name", username).Filter("path", filepath.Join(p, fi.Name())).Exist() {
+			starred = true
+		}
 		obj := File{
 			Name: fi.Name(),
 			Size: fi.Size(),
 			Type: tp,
 			Mtime: mtime,
-			MtimeRelative: seacloud_time}
+			MtimeRelative: seacloud_time,
+			Starred: starred}
 		ret = append(ret, obj)
 	}
 
@@ -134,7 +142,8 @@ func GetTrashFilelistByPath(username, p string) ([]TrashFile, error) {
 			Size: fi.Size(),
 			Type: tp,
 			Mtime: mtime,
-			MtimeRelative: seacloud_time}
+			MtimeRelative: seacloud_time,
+			Starred: false}
 		obj.Id = fileId
 		ret = append(ret, obj)
 	}

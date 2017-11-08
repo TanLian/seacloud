@@ -21,5 +21,8 @@ func init() {
 	beego.Router("/api/files/trash", &controllers.FileController{}, "get:GetTrashFiles")
 	beego.Router("/api/files/trash/clear", &controllers.FileController{}, "delete:ClearTrashFiles")
 	beego.Router("/api/files/trash/restore", &controllers.FileController{}, "post:RestoreTrashSingleFile")
+	beego.Router("/api/files/favorites", &controllers.FileController{}, "get:GetFavorateFiles")
+	beego.Router("/api/files/favorites/add", &controllers.FileController{}, "post:AddFavorateFile")
+	beego.Router("/api/files/favorites/delete", &controllers.FileController{}, "post:DeleteFavorateFile")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }
