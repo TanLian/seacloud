@@ -24,5 +24,7 @@ func init() {
 	beego.Router("/api/files/favorites", &controllers.FileController{}, "get:GetFavorateFiles")
 	beego.Router("/api/files/favorites/add", &controllers.FileController{}, "post:AddFavorateFile")
 	beego.Router("/api/files/favorites/delete", &controllers.FileController{}, "post:DeleteFavorateFile")
+	beego.Router("/api/profile/get", &controllers.ProfileController{}, "get:GetProfile")
+	beego.Router("/api/profile/post", &controllers.ProfileController{}, "post:PostProfile")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }
