@@ -86,13 +86,23 @@ func CheckToken(token string) bool {
 	return true
 }
 
-func (u *User) CheckUserPass(pass string) (ok bool, err error) {
+func (u *User) CheckUserPass(pass string) (bool, error) {
 	hash, err := generatePassHash(pass, u.Salt)
 	if err != nil {
 		return false, err
 	}
 
 	return u.Password == hash, nil
+}
+
+func (u *User) ChangePassWord(newPass string) error {
+	hash, err := generatePassHash(newPass, u.Salt)
+	if err != nil {
+		return err
+	}
+	u.Password = hash
+	_, err = orm.NewOrm().Update(u, "Password")
+	return err
 }
 
 func InsertUser(username, password string, isAdmin bool, profile, telephone, avatar string) error {

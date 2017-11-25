@@ -28,5 +28,6 @@ func init() {
 	beego.Router("/api/profile/post", &controllers.ProfileController{}, "post:PostProfile")
 	beego.Router("/api/avatar/upload", &controllers.AvatarController{}, "post:UploadAvatar")
 	beego.Router("/api/avatar/get", &controllers.AvatarController{}, "get:GetAvatar")
+	beego.Router("/api/user/changepw", &controllers.UserController{}, "post:ChangePassword")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }

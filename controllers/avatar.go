@@ -47,7 +47,7 @@ func (this *AvatarController)UploadAvatar() {
 	}
 
 	content := make([]byte, 10300)
-	length, err := f.Read(content)
+	_, err = f.Read(content)
 	if err != nil {
 		ret["error"] = err.Error()
 		this.Data["json"] = &ret
