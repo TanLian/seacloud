@@ -23,6 +23,7 @@ func IsLogin(ctx *context.Context) bool {
 var FilterUser = func(ctx *context.Context) {
 	ok := IsLogin(ctx)
 	if !ok {
-		ctx.Redirect(302, "/#/accounts/login/")
+		//ctx.Redirect(302, "/#/accounts/login/")
+		ctx.ResponseWriter.Write([]byte("{'error':'not login'}"))
 	}
 }

@@ -37,7 +37,7 @@ func init() {
 		dbPort = 3306
 	}
 	orm.RegisterDriver("mysql", orm.DRMySQL)
-	orm.RegisterDataBase("default", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", dbUser, dbPass, dbHost, dbPort, dbName))
+	orm.RegisterDataBase("default", "mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&loc=Local", dbUser, dbPass, dbHost, dbPort, dbName))
 	orm.RunSyncdb("default", false, true)
 }
 

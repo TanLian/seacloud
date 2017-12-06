@@ -8,7 +8,9 @@ import (
 
 func init() {
 	beego.Router("/", &controllers.MainController{})
+	beego.Router("/api/is_user_login/", &controllers.UserController{}, "post:IsTokenValid")
 	beego.Router("/user/login", &controllers.UserController{})
+	beego.Router("/api/user/logout", &controllers.UserController{}, "post:UserLogout")
 	beego.Router("/api/files", &controllers.FileController{})
 	beego.Router("/api/file/get_tmp_download_link", &controllers.LinkController{}, "get:GetTmpDownloadLink")
 	beego.Router("/api/file/get_tmp_upload_link", &controllers.LinkController{}, "get:GetTmpUploadLink")

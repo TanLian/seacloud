@@ -54,7 +54,39 @@ func (this *UserController)Post() {
 	token := models.GenToken()
 	cookie := http.Cookie{Name: "Authorization", Value: token, Path: "/", MaxAge: 3600}
 	http.SetCookie(this.Ctx.ResponseWriter, &cookie)
-	this.Redirect("/#/apps/files", 302)
+
+	//this.Redirect("/#/apps/files", 302)
+	ret["success"] = "success"
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}
+
+func (this *UserController)UserLogout() {
+	ret := make(map[string]string)
+	cookie := http.Cookie{Name: "Authorization", Value: "", Path: "/", MaxAge: -1}
+	http.SetCookie(this.Ctx.ResponseWriter, &cookie)
+	//设置session
+	this.SetSession("username", "")
+	ret["success"] = "success"
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}
+
+type tokenForm struct {
+	Token string `json:"token"`
+}
+func (this *UserController)IsTokenValid() {
+	ret := make(map[string]string)
+	var form tokenForm
+	json.Unmarshal(this.Ctx.Input.RequestBody, &form)
+
+	if models.CheckToken(form.Token) {
+		ret["success"] = "success"
+	}else {
+		ret["error"] = "error"
+	}
+	this.Data["json"] = &ret
+	this.ServeJSON()
 }
 
 type changePasswordForm struct {

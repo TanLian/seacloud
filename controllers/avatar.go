@@ -76,6 +76,13 @@ func (this *AvatarController)GetAvatar() {
 	ret := make(map[string]string)
 	username := this.GetSession("username")
 
+	if username == nil {
+		ret["error"] = "not login"
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
 	data, err := models.GetAvatarDataByUsername(username.(string))
 	if err != nil {
 		//说明未设置头像，返回默认的
