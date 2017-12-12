@@ -88,11 +88,17 @@ func (this *FileController)UploadFile() {
 	f, h, _ := this.GetFile("file")                  //获取上传的文件
 	defer f.Close()
 
-	//username := this.GetSession("username")
+	username := this.GetSession("username")
+	if username == nil {
+		ret["error"] = "Session is expired, you may need to relogin."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
 
 	dataDir := utils.GetDataBaseDir()
 
-	this.SaveToFile("file", filepath.Join(dataDir, "root", "files", p, h.Filename))
+	this.SaveToFile("file", filepath.Join(dataDir, username.(string), "files", p, h.Filename))
 	
 	ret2 := make(map[string][]utils.File)
 	files := make([]utils.File, 0)

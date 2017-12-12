@@ -31,6 +31,7 @@ type User struct {
 	Avatar     string
 	CreateTime time.Time `orm:"column(create_time);type(datetime);null;auto_now_add" json:"create_time"`
 	Salt       string `json:"salt,omitempty"`
+	Source string
 }
 
 func init() {
@@ -105,7 +106,7 @@ func (u *User) ChangePassWord(newPass string) error {
 	return err
 }
 
-func InsertUser(username, password string, isAdmin bool, profile, telephone, avatar string) error {
+func InsertUser(username, password string, isAdmin bool, profile, telephone, avatar, source string) error {
 	salt, err := generateSalt()
 	if err != nil {
 		return err
@@ -122,7 +123,8 @@ func InsertUser(username, password string, isAdmin bool, profile, telephone, ava
 		Profile: profile,
 		Telephone: telephone,
 		Avatar: avatar,
-		Salt:     salt}
+		Salt:     salt,
+		Source: source}
 
 	o := orm.NewOrm()
 	_, err = o.Insert(&user)

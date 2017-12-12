@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"seacloud/models"
 	"net/http"
+	"seacloud/utils"
+	"os"
+	"path/filepath"
 )
 
 type UserController struct {
@@ -147,4 +150,98 @@ func (this *UserController)ChangePassword() {
 	ret["success"] = "success"
 	this.Data["json"] = &ret
 	this.ServeJSON()
+}
+
+type newUserForm struct {
+	UserName string `json:"username"`
+	Password string	`json:"password"`
+	Source string `json:"source"`
+	IsAdmin bool `json:"is_admin"`
+}
+func (this *UserController)AddUser() {
+	ret := make(map[string]string)
+
+	var form newUserForm
+	json.Unmarshal(this.Ctx.Input.RequestBody, &form)
+	if form.UserName == "" || form.Password == "" || form.Source == "" {
+		ret["error"] = "Username and password can not be null"
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	username := this.GetSession("username")
+	if username == nil {
+		ret["error"] = "Session is expired, you may need to relogin."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	//查找数据库，根据用户名获取user对象
+	user, err := models.GetUserByName(username.(string))
+	if err != nil {
+		fmt.Println(err)
+		ret["error"] = "User does not exist."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+	//只有管理员才有权添加新用户
+	if user.IsAdmin == false {
+		ret["error"] = "Only admin can add user."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	isAdmin := false
+	if form.IsAdmin == true {
+		isAdmin = true
+	}
+
+	err = models.InsertUser(form.UserName, form.Password, isAdmin, "", "", "", form.Source)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	dataDir := utils.GetDataBaseDir()
+	p := filepath.Join(dataDir, form.UserName)
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		os.MkdirAll(p, 0777)
+	}
+
+	p = filepath.Join(dataDir, form.UserName, "files")
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		os.MkdirAll(p, 0777)
+	}
+
+	p = filepath.Join(dataDir, form.UserName, "Trash")
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		os.MkdirAll(p, 0777)
+	}
+
+	ret["success"] = "success"
+	this.Data["json"] = &ret
+	this.ServeJSON()
+	return
+}
+
+func (this *UserController)GetUserName() {
+	ret := make(map[string]string)
+	username := this.GetSession("username")
+	if username == nil {
+		ret["error"] = "Session is expired, you may need to relogin."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+	ret["success"] = "success"
+	ret["username"] = username.(string)
+	this.Data["json"] = &ret
+	this.ServeJSON()
+	return
 }
