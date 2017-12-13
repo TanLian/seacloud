@@ -150,3 +150,13 @@ func GetUserByName(username string) (*User, error) {
 	
 	return &user, nil
 }
+
+func GetAllUserNames() ([]string, error) {
+	userlist := make([]string, 0)
+	o := orm.NewOrm()
+	_, err := o.Raw("SELECT user_name FROM user").QueryRows(&userlist)
+	if err != nil {
+			return userlist, err
+	}
+	return userlist, nil
+}

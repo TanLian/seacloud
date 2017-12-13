@@ -245,3 +245,52 @@ func (this *UserController)GetUserName() {
 	this.ServeJSON()
 	return
 }
+
+type userProfile struct {
+	UserName string
+	Avatar	string
+	Motto string
+	Intro string
+	Depart 	string
+	Tele string
+}
+func (this *UserController)GetAllUsers() {
+	ret := make(map[string]interface{})
+	username := this.GetSession("username")
+	if username == nil {
+		ret["error"] = "Session is expired, you may need to relogin."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	userlist := make([]userProfile, 0)
+
+	usernameList, err := models.GetAllUserNames()
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	for _, name := range usernameList {
+		user := userProfile{
+			UserName:name,
+			Avatar:  models.GetAvatarDataByUsername(name)}
+		profile, _ := models.GetProfileByUsername(name)
+		if profile != nil {
+			user.Motto = profile.Motto
+			user.Intro = profile.Intro
+			user.Depart = profile.Depart
+			user.Tele = profile.Tele
+		}
+		userlist = append(userlist, user)
+	}
+
+	ret["success"] = "success"
+	ret["userlist"] = userlist
+	this.Data["json"] = &ret
+	this.ServeJSON()
+	return
+}

@@ -33,5 +33,6 @@ func init() {
 	beego.Router("/api/user/changepw", &controllers.UserController{}, "post:ChangePassword")
 	beego.Router("/api/user/add", &controllers.UserController{}, "post:AddUser")
 	beego.Router("/api/user/getusername", &controllers.UserController{}, "get:GetUserName")
+	beego.Router("/api/user/getallusers", &controllers.UserController{}, "get:GetAllUsers")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }
