@@ -34,5 +34,6 @@ func init() {
 	beego.Router("/api/user/add", &controllers.UserController{}, "post:AddUser")
 	beego.Router("/api/user/getusername", &controllers.UserController{}, "get:GetUserName")
 	beego.Router("/api/user/getallusers", &controllers.UserController{}, "get:GetAllUsers")
+	beego.Router("/api/group/new", &controllers.GroupController{}, "post:NewGroup")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }
