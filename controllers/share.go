@@ -111,3 +111,42 @@ func (this *ShareController) GetDownloadLinkInfo() {
 	this.Data["json"] = &ret
 	this.ServeJSON()
 }
+
+type DeleteDownloadLinkInfo struct {
+	Path string `json:"p"`
+}
+
+func (this *ShareController) DeleteDownloadLink() {
+	username := this.GetSession("username")
+	ret := make(map[string]interface{})
+
+	if username == nil {
+		ret["error"] = "Session is expired."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	var params DeleteDownloadLinkInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	p := filepath.Clean(params.Path)
+
+	err = models.DeleteDownloadLink(username.(string), p)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	ret["success"] = "success"
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}

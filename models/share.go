@@ -98,3 +98,8 @@ func GetDownloadLinkInfo(username, path string) (bool, DownloadLinkInfo, error) 
 		Password: password}
 	return true, info, nil
 }
+
+func DeleteDownloadLink(username, path string) error {
+	_, err := orm.NewOrm().QueryTable("download_share_link").Filter("user_name", username).Filter("path", path).Delete()
+	return err
+}
