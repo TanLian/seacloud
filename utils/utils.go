@@ -1,34 +1,39 @@
 package utils
 
 import (
-	"fmt"
-	"path/filepath"
-	"github.com/widuu/goini"
-	"io/ioutil"
-	"time"
-	"strconv"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/md5"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/hex"
+	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
-	"crypto/rand"  
-	"encoding/base64"  
-	"encoding/hex"  
+	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
+
 	"github.com/astaxie/beego/orm"
+	"github.com/widuu/goini"
 )
 
 type File struct {
-	Name string
-	Size int64
-	Type string
-	Mtime int64
+	Name          string
+	Size          int64
+	Type          string
+	Mtime         int64
 	MtimeRelative string
-	Starred bool
+	Starred       bool
 }
 
 type TrashFile struct {
 	File File
-	Id string
+	Id   string
 }
 
 type FavorateFile struct {
@@ -36,19 +41,19 @@ type FavorateFile struct {
 	Path string
 }
 
-func Translate_seacloud_time(mtime int64) string{
+func Translate_seacloud_time(mtime int64) string {
 	now := time.Now().Unix()
 	if mtime > now {
 		return "1秒前"
 	}
-	switch  {
-	case now - mtime > TWOWEEKS:
+	switch {
+	case now-mtime > TWOWEEKS:
 		return time.Unix(mtime, 0).Format("2006-01-02 15:04:05")
-	case now - mtime > ONEDAY:
+	case now-mtime > ONEDAY:
 		return strconv.FormatInt((now-mtime)/ONEDAY, 10) + "天前"
-	case now - mtime > ONEHOUR:
+	case now-mtime > ONEHOUR:
 		return strconv.FormatInt((now-mtime)/ONEHOUR, 10) + "小时前"
-	case now - mtime > ONEMINUTE:
+	case now-mtime > ONEMINUTE:
 		return strconv.FormatInt((now-mtime)/ONEMINUTE, 10) + "分钟前"
 	default:
 		return strconv.FormatInt(now-mtime, 10) + "秒前"
@@ -94,12 +99,12 @@ func GetFilelistByPath(username, p string) ([]File, error) {
 			starred = true
 		}
 		obj := File{
-			Name: fi.Name(),
-			Size: fi.Size(),
-			Type: tp,
-			Mtime: mtime,
+			Name:          fi.Name(),
+			Size:          fi.Size(),
+			Type:          tp,
+			Mtime:         mtime,
 			MtimeRelative: seacloud_time,
-			Starred: starred}
+			Starred:       starred}
 		ret = append(ret, obj)
 	}
 
@@ -133,17 +138,17 @@ func GetTrashFilelistByPath(username, p string) ([]TrashFile, error) {
 		fileId := ""
 		dotIndex := strings.LastIndex(name, ".")
 		if p == "/" {
-			fileId = name[dotIndex + 1:]
+			fileId = name[dotIndex+1:]
 			name = name[:strings.LastIndex(name, ".")]
-		}	
+		}
 		obj := TrashFile{}
 		obj.File = File{
-			Name: name,
-			Size: fi.Size(),
-			Type: tp,
-			Mtime: mtime,
+			Name:          name,
+			Size:          fi.Size(),
+			Type:          tp,
+			Mtime:         mtime,
 			MtimeRelative: seacloud_time,
-			Starred: false}
+			Starred:       false}
 		obj.Id = fileId
 		ret = append(ret, obj)
 	}
@@ -181,19 +186,63 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-//生成32位md5字串  
-func GetMd5String(s string) string {  
-	h := md5.New()  
-	h.Write([]byte(s))  
-	return hex.EncodeToString(h.Sum(nil))  
-}  
+//生成32位md5字串
+func GetMd5String(s string) string {
+	h := md5.New()
+	h.Write([]byte(s))
+	return hex.EncodeToString(h.Sum(nil))
+}
 
-//生成Guid字串  
-func UniqueId() string {  
-	b := make([]byte, 48)  
+//生成Guid字串
+func UniqueId() string {
+	b := make([]byte, 48)
 
-	if _, err := io.ReadFull(rand.Reader, b); err != nil {  
-			return ""  
-	}  
-	return GetMd5String(base64.URLEncoding.EncodeToString(b))  
-} 
+	if _, err := io.ReadFull(rand.Reader, b); err != nil {
+		return ""
+	}
+	return GetMd5String(base64.URLEncoding.EncodeToString(b))
+}
+
+//AES 加密解密
+var (
+	commonkey = []byte("nanjishidu170416")
+	syncMutex sync.Mutex
+)
+
+func SetAesKey(key string) {
+	syncMutex.Lock()
+	defer syncMutex.Unlock()
+	commonkey = []byte(key)
+}
+func AesEncrypt(plaintext string) (string, error) {
+	block, err := aes.NewCipher(commonkey)
+	if err != nil {
+		return "", err
+	}
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", err
+	}
+	cipher.NewCFBEncrypter(block, iv).XORKeyStream(ciphertext[aes.BlockSize:],
+		[]byte(plaintext))
+	return hex.EncodeToString(ciphertext), nil
+
+}
+func AesDecrypt(d string) (string, error) {
+	ciphertext, err := hex.DecodeString(d)
+	if err != nil {
+		return "", err
+	}
+	block, err := aes.NewCipher(commonkey)
+	if err != nil {
+		return "", err
+	}
+	if len(ciphertext) < aes.BlockSize {
+		return "", errors.New("ciphertext too short")
+	}
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+	cipher.NewCFBDecrypter(block, iv).XORKeyStream(ciphertext, ciphertext)
+	return string(ciphertext), nil
+}

@@ -37,5 +37,7 @@ func init() {
 	beego.Router("/api/group/new", &controllers.GroupController{}, "post:NewGroup")
 	//beego.Router("/api/group/getallgroups", &controllers.GroupController{}, "get:GetAllGroups")
 	beego.Router("/api/files/get_dir_img_files", &controllers.ImageFileController{})
+	beego.Router("/api/files/share/generate_download_link", &controllers.ShareController{}, "post:GenerateDownloadLink")
+	beego.Router("/api/files/share/get_download_link_info", &controllers.ShareController{}, "get:GetDownloadLinkInfo")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }
