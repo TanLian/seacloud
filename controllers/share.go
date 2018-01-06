@@ -150,3 +150,96 @@ func (this *ShareController) DeleteDownloadLink() {
 	this.Data["json"] = &ret
 	this.ServeJSON()
 }
+
+type EditDownloadLinkPasswordInfo struct {
+	Path     string `json:"path"`
+	Password string `json:"password"`
+}
+
+func (this *ShareController) EditDownloadLinkPassword() {
+	username := this.GetSession("username")
+	ret := make(map[string]string)
+
+	if username == nil {
+		ret["error"] = "Session is expired."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	var params EditDownloadLinkPasswordInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	p := filepath.Clean(params.Path)
+
+	err = models.EditDownloadLinkPassword(username.(string), p, params.Password)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	ret["success"] = "success"
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}
+
+type EditDownloadLinkExpiredInfo struct {
+	Path    string `json:"path"`
+	Expired string `json:"expired"`
+}
+
+func (this *ShareController) EditDownloadLinkExpired() {
+	username := this.GetSession("username")
+	ret := make(map[string]string)
+
+	if username == nil {
+		ret["error"] = "Session is expired."
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	var params EditDownloadLinkExpiredInfo
+	err := json.Unmarshal(this.Ctx.Input.RequestBody, &params)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	var expired time.Time
+	if params.Expired == "" {
+		expired = time.Unix(0, 0)
+	} else {
+		expired, err = time.Parse("2006-01-02", params.Expired)
+		if err != nil {
+			ret["error"] = err.Error()
+			this.Data["json"] = &ret
+			this.ServeJSON()
+			return
+		}
+	}
+
+	p := filepath.Clean(params.Path)
+
+	err = models.EditDownloadLinkExpired(username.(string), p, expired)
+	if err != nil {
+		ret["error"] = err.Error()
+		this.Data["json"] = &ret
+		this.ServeJSON()
+		return
+	}
+
+	ret["success"] = "success"
+	this.Data["json"] = &ret
+	this.ServeJSON()
+}

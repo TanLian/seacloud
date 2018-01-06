@@ -40,5 +40,7 @@ func init() {
 	beego.Router("/api/files/share/generate_download_link", &controllers.ShareController{}, "post:GenerateDownloadLink")
 	beego.Router("/api/files/share/get_download_link_info", &controllers.ShareController{}, "get:GetDownloadLinkInfo")
 	beego.Router("/api/files/share/delete_download_link", &controllers.ShareController{}, "post:DeleteDownloadLink")
+	beego.Router("/api/files/share/edit_download_link_password", &controllers.ShareController{}, "post:EditDownloadLinkPassword")
+	beego.Router("/api/files/share/edit_download_link_expired", &controllers.ShareController{}, "post:EditDownloadLinkExpired")
 	beego.Router("/test_json", &controllers.TestJsoncontroller{})
 }
